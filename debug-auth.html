@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #374151;
+        }
+        .success { background: #065f46; color: #10b981; }
+        .error { background: #7f1d1d; color: #f87171; }
+        .warning { background: #92400e; color: #fbbf24; }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #7c3aed; }
+        .code {
+            background: #1f2937;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Authentication Debug Tool</h1>
+        
+        <div class="section">
+            <h3>Current Authentication Status</h3>
+            <div id="authStatus"></div>
+        </div>
+        
+        <div class="section">
+            <h3>JWT Token Details</h3>
+            <div id="tokenDetails"></div>
+        </div>
+        
+        <div class="section">
+            <h3>User Information</h3>
+            <div id="userInfo"></div>
+        </div>
+        
+        <div class="section">
+            <h3>Actions</h3>
+            <button onclick="checkAuth()">Check Authentication</button>
+            <button onclick="clearAll()">Clear All Data</button>
+            <button onclick="testAPI()">Test API Call</button>
+            <button onclick="goToApp()">Go to App</button>
+        </div>
+        
+        <div class="section">
+            <h3>API Test Results</h3>
+            <div id="apiResults"></div>
+        </div>
+    </div>
+
+    <script>
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            // Check auth status
+            const authDiv = document.getElementById('authStatus');
+            if (token && user) {
+                authDiv.innerHTML = '<div class="success">✅ You are logged in</div>';
+            } else {
+                authDiv.innerHTML = '<div class="error">❌ You are NOT logged in</div>';
+            }
+            
+            // Show token details
+            const tokenDiv = document.getElementById('tokenDetails');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const expDate = new Date(payload.exp * 1000);
+                    const isExpired = expDate < new Date();
+                    
+                    tokenDiv.innerHTML = `
+                        <div class="code">Token: ${token.substring(0, 50)}...</div>
+                        <div>User ID: ${payload.id}</div>
+                        <div>Expires: ${expDate.toLocaleString()}</div>
+                        <div class="${isExpired ? 'error' : 'success'}">
+                            ${isExpired ? '❌ Token is EXPIRED' : '✅ Token is valid'}
+                        </div>
+                    `;
+                } catch (e) {
+                    tokenDiv.innerHTML = '<div class="error">❌ Invalid token format</div>';
+                }
+            } else {
+                tokenDiv.innerHTML = '<div class="warning">⚠️ No token found</div>';
+            }
+            
+            // Show user info
+            const userDiv = document.getElementById('userInfo');
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    userDiv.innerHTML = `
+                        <div>Name: ${userData.name}</div>
+                        <div>Email: ${userData.email}</div>
+                        <div>ID: ${userData._id}</div>
+                    `;
+                } catch (e) {
+                    userDiv.innerHTML = '<div class="error">❌ Invalid user data</div>';
+                }
+            } else {
+                userDiv.innerHTML = '<div class="warning">⚠️ No user data found</div>';
+            }
+        }
+        
+        function clearAll() {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('authStatus').innerHTML = '<div class="warning">⚠️ All data cleared</div>';
+            document.getElementById('tokenDetails').innerHTML = '';
+            document.getElementById('userInfo').innerHTML = '';
+        }
+        
+        async function testAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<div>Testing API call...</div>';
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                resultsDiv.innerHTML = '<div class="error">❌ No token available for API test</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/health', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML = `
+                        <div class="success">✅ API call successful</div>
+                        <div class="code">${JSON.stringify(data, null, 2)}</div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error">❌ API call failed: ${response.status}</div>
+                        <div>Status: ${response.statusText}</div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ API call error: ${error.message}</div>`;
+            }
+        }
+        
+        function goToApp() {
+            window.location.href = 'http://localhost:5174/';
+        }
+        
+        // Check auth on page load
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

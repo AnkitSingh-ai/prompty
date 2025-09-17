@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear JWT Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #374151;
+        }
+        .success {
+            background: #065f46;
+            color: #10b981;
+        }
+        .error {
+            background: #7f1d1d;
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Clear JWT Token</h1>
+        <p>This will clear your old JWT token so you can get a fresh one.</p>
+        
+        <button onclick="clearToken()">Clear JWT Token</button>
+        <button onclick="checkToken()">Check Current Token</button>
+        <button onclick="goToApp()">Go to App</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function clearToken() {
+            try {
+                // Clear localStorage
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                showStatus('✅ JWT Token cleared successfully! You can now log in again.', 'success');
+            } catch (error) {
+                showStatus('❌ Error clearing token: ' + error.message, 'error');
+            }
+        }
+        
+        function checkToken() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token) {
+                showStatus('🔍 Current token: ' + token.substring(0, 20) + '...', 'status');
+            } else {
+                showStatus('✅ No token found - you can log in fresh!', 'success');
+            }
+        }
+        
+        function goToApp() {
+            window.location.href = 'http://localhost:5174/';
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        // Check token on page load
+        window.onload = function() {
+            checkToken();
+        };
+    </script>
+</body>
+</html>
