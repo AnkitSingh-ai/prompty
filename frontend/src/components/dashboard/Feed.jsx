@@ -8,6 +8,7 @@ import { likesAPI } from '../../services/likesAPI';
 import { commentsAPI } from '../../services/commentsAPI';
 import { useAuth } from '../../contexts/AuthContext';
 import UserProfileModal from '../UserProfileModal';
+import PaymentModal from '../PaymentModal';
 
 const Feed = () => {
   const { user } = useAuth();
@@ -36,6 +37,10 @@ const Feed = () => {
   // User profile modal state
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPromptForPurchase, setSelectedPromptForPurchase] = useState(null);
 
   const filters = [
     { id: 'all', label: 'All', icon: Filter },
@@ -262,27 +267,31 @@ const Feed = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Purchase "${post.title}" for $${post.price}?\n\nThis will be added to your library.`
-    );
+    // Open payment modal
+    setSelectedPromptForPurchase(post);
+    setShowPaymentModal(true);
+  };
 
-    if (!confirmed) return;
-
-    setPurchasingPrompt(post.id);
+  const handlePaymentSuccess = async (paymentResult) => {
     try {
-      const result = await purchaseAPI.purchasePrompt(post.id);
-      alert('Purchase successful! The prompt has been added to your library.');
+      // Process the purchase with the backend
+      const result = await purchaseAPI.purchasePrompt(selectedPromptForPurchase.id);
       
       // Update purchased prompts set
-      setPurchasedPrompts(prev => new Set([...prev, post.id]));
+      setPurchasedPrompts(prev => new Set([...prev, selectedPromptForPurchase.id]));
+      
+      // Close payment modal
+      setShowPaymentModal(false);
+      setSelectedPromptForPurchase(null);
+      
+      // Show success message
+      alert('🎉 Purchase successful! The prompt has been added to your library.');
       
       // Refresh prompts to update sales count
       loadPrompts();
     } catch (error) {
-      console.error('Purchase failed:', error);
-      alert(error.response?.data?.message || 'Purchase failed. Please try again.');
-    } finally {
-      setPurchasingPrompt(null);
+      console.error('Purchase processing failed:', error);
+      alert(error.response?.data?.message || 'Purchase processing failed. Please contact support.');
     }
   };
 
@@ -957,6 +966,17 @@ const Feed = () => {
         isOpen={showUserProfile}
         onClose={handleCloseUserProfile}
         userId={selectedUserId}
+      />
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPromptForPurchase(null);
+        }}
+        prompt={selectedPromptForPurchase}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </div>
   );

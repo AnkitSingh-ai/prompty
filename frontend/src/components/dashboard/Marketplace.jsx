@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Star, ShoppingCart, Eye, Heart, TrendingUp, CreditCard, CheckCircle } from 'lucide-react';
 import { promptAPI } from '../../services/promptAPI';
 import { purchaseAPI } from '../../services/purchaseAPI';
+import PaymentModal from '../PaymentModal';
 
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,6 +12,10 @@ const Marketplace = () => {
   const [loading, setLoading] = useState(true);
   const [purchasedPrompts, setPurchasedPrompts] = useState(new Set());
   const [purchasingPrompt, setPurchasingPrompt] = useState(null);
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPromptForPurchase, setSelectedPromptForPurchase] = useState(null);
 
   const categories = [
     { id: 'all', label: 'All Categories' },
@@ -108,27 +113,31 @@ const Marketplace = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Purchase "${prompt.title}" for $${prompt.price}?\n\nThis will be added to your library.`
-    );
+    // Open payment modal
+    setSelectedPromptForPurchase(prompt);
+    setShowPaymentModal(true);
+  };
 
-    if (!confirmed) return;
-
-    setPurchasingPrompt(prompt.id);
+  const handlePaymentSuccess = async (paymentResult) => {
     try {
-      const result = await purchaseAPI.purchasePrompt(prompt.id);
-      alert('Purchase successful! The prompt has been added to your library.');
+      // Process the purchase with the backend
+      const result = await purchaseAPI.purchasePrompt(selectedPromptForPurchase.id);
       
       // Update purchased prompts set
-      setPurchasedPrompts(prev => new Set([...prev, prompt.id]));
+      setPurchasedPrompts(prev => new Set([...prev, selectedPromptForPurchase.id]));
+      
+      // Close payment modal
+      setShowPaymentModal(false);
+      setSelectedPromptForPurchase(null);
+      
+      // Show success message
+      alert('🎉 Purchase successful! The prompt has been added to your library.');
       
       // Refresh prompts to update sales count
       loadPrompts();
     } catch (error) {
-      console.error('Purchase failed:', error);
-      alert(error.response?.data?.message || 'Purchase failed. Please try again.');
-    } finally {
-      setPurchasingPrompt(null);
+      console.error('Purchase processing failed:', error);
+      alert(error.response?.data?.message || 'Purchase processing failed. Please contact support.');
     }
   };
 
@@ -435,6 +444,17 @@ const Marketplace = () => {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPromptForPurchase(null);
+        }}
+        prompt={selectedPromptForPurchase}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };

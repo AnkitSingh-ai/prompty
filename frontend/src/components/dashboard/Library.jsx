@@ -78,7 +78,23 @@ const Library = () => {
   const handleDownload = async (prompt) => {
     setDownloadingPrompt(prompt._id || prompt.id);
     try {
-      const result = await purchaseAPI.downloadPrompt(prompt.purchaseId);
+      // For favorites, we don't have a purchaseId, so just download the prompt content
+      let result;
+      if (prompt.purchaseId) {
+        result = await purchaseAPI.downloadPrompt(prompt.purchaseId);
+      } else {
+        // Create download content from the prompt data
+        result = {
+          prompt: {
+            title: prompt.prompt?.title || prompt.title,
+            description: prompt.prompt?.description || prompt.description,
+            prompt: prompt.prompt?.prompt || prompt.content || 'Prompt content not available',
+            category: prompt.prompt?.category || prompt.category,
+            tags: prompt.prompt?.tags || prompt.tags || [],
+            author: prompt.prompt?.author || prompt.author
+          }
+        };
+      }
       
       // Create a downloadable text file
       const content = `Title: ${result.prompt.title}\n\nDescription: ${result.prompt.description}\n\nPrompt:\n${result.prompt.prompt}\n\nCategory: ${result.prompt.category}\nTags: ${result.prompt.tags.join(', ')}\nAuthor: ${result.prompt.author?.name || 'Unknown'}`;
@@ -104,7 +120,8 @@ const Library = () => {
 
   const handleCopyPrompt = async (prompt) => {
     try {
-      await navigator.clipboard.writeText(prompt.prompt);
+      const promptText = prompt.prompt?.prompt || prompt.content || prompt.prompt;
+      await navigator.clipboard.writeText(promptText);
       setCopiedPrompt(prompt._id || prompt.id);
       setTimeout(() => setCopiedPrompt(null), 2000);
     } catch (error) {
@@ -493,6 +510,8 @@ const Library = () => {
           </div>
         ) : (activeTab === 'purchased' && purchasedPrompts.length > 0) || (activeTab === 'created' && myPrompts.length > 0) ? (
           viewMode === 'grid' ? <GridView /> : <ListView />
+        ) : (activeTab === 'favorites' && favoritePrompts.length > 0) ? (
+          viewMode === 'grid' ? <GridView /> : <ListView />
         ) : (
           <div className="text-center py-12">
             <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -501,6 +520,7 @@ const Library = () => {
               {activeTab === 'purchased' && "You haven't purchased any prompts yet. Visit the marketplace to find amazing prompts!"}
               {activeTab === 'created' && "You haven't created any prompts yet. Start creating amazing prompts!"}
               {activeTab === 'favorites' && "You haven't favorited any prompts yet."}
+              {activeTab === 'generated' && "You haven't generated any content yet. Visit the AI Playground to start creating!"}
             </p>
             {activeTab === 'purchased' && (
               <button 

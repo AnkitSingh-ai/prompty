@@ -13,7 +13,7 @@ class LikesAPI {
 
     // Add auth token to requests
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('promptverse_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
