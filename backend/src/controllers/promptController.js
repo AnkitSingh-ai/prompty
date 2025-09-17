@@ -22,7 +22,8 @@ export const createPrompt = async (req, res) => {
       tags,
       price,
       isPublic,
-      image
+      image,
+      aiModel
     } = req.body;
 
     // Debug: Log what we're receiving
@@ -35,7 +36,8 @@ export const createPrompt = async (req, res) => {
       price,
       isPublic,
       image,
-      imageType: typeof image
+      imageType: typeof image,
+      aiModel
     });
 
     // Always use real MongoDB - no more mock data
@@ -50,7 +52,8 @@ export const createPrompt = async (req, res) => {
       price: price || 0,
       isPublic: isPublic !== undefined ? isPublic : true,
       author: req.user.id,
-      image: image || null
+      image: image || null,
+      aiModel: aiModel || null
     });
 
     // Populate author information

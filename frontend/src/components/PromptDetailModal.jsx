@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, Eye, Heart, MessageCircle, Star, Tag, DollarSign, Globe, Lock, Image as ImageIcon, User, Clock, Copy, CheckCircle } from 'lucide-react';
+import { X, Calendar, Eye, Heart, MessageCircle, Star, Tag, DollarSign, Globe, Lock, Image as ImageIcon, User, Copy, CheckCircle, Sparkles } from 'lucide-react';
 
 const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -40,8 +40,8 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm">
-      <div className="bg-slate-800/90 border border-white/10 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-slate-800/90 border border-white/10 rounded-xl shadow-2xl w-full max-w-4xl max-h-[88vh] overflow-y-auto relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
@@ -49,13 +49,13 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
           <X size={24} />
         </button>
 
-        <div className="p-8">
+        <div className="p-6 md:p-7">
           {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="mb-4">
+            <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h2 className="text-3xl font-bold text-white mb-2">{prompt.title}</h2>
-                <p className="text-gray-300 text-lg leading-relaxed">{prompt.description}</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-1.5">{prompt.title}</h2>
+                <p className="text-gray-300 text-base leading-relaxed">{prompt.description}</p>
               </div>
               <div className="flex items-center space-x-2 ml-4">
                 {prompt.isPublic ? (
@@ -73,7 +73,7 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center space-x-6 text-sm text-gray-400">
+            <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-gray-400">
               <div className="flex items-center">
                 <Calendar className="w-4 h-4 mr-1" />
                 Created {formatTimeAgo(prompt.createdAt)}
@@ -95,8 +95,8 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
 
           {/* Image */}
           {prompt.image && (
-            <div className="mb-6">
-              <div className="relative w-full h-64 rounded-lg overflow-hidden bg-slate-700/50">
+            <div className="mb-5">
+              <div className="relative w-full h-56 md:h-64 rounded-lg overflow-hidden bg-slate-700/50">
                 <img
                   src={prompt.image}
                   alt={prompt.title}
@@ -117,12 +117,12 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
           )}
 
           {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 items-stretch">
             {/* Left Column - Prompt Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 flex flex-col gap-5 md:gap-6">
               {/* Prompt Text */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-5 flex-1 flex flex-col">
+                <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xl font-semibold text-white flex items-center">
                     <Tag className="w-5 h-5 mr-2" />
                     Prompt Content
@@ -145,7 +145,7 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
                     )}
                   </button>
                 </div>
-                <div className="bg-slate-800/50 border border-white/5 rounded-lg p-4">
+                <div className="bg-slate-800/50 border border-white/5 rounded-lg p-3.5 flex-1">
                   <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
                     {prompt.prompt}
                   </pre>
@@ -153,8 +153,8 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
               </div>
 
               {/* Category & Tags */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4">Details</h3>
+              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-5 flex-1">
+              <h3 className="text-xl font-semibold text-white mb-3">Details</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-300 block mb-2">Category</label>
@@ -162,6 +162,16 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
                       {prompt.category}
                     </span>
                   </div>
+
+                {prompt.aiModel && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 block mb-2">AI Model Used</label>
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm">
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      {prompt.aiModel}
+                    </div>
+                  </div>
+                )}
                   
                   {prompt.tags && prompt.tags.length > 0 && (
                     <div>
@@ -183,30 +193,36 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
             </div>
 
             {/* Right Column - Stats & Info */}
-            <div className="space-y-6">
+              <div className="flex flex-col h-full gap-3">
               {/* Pricing */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <DollarSign className="w-5 h-5 mr-2" />
+              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-3 flex-[0.9] flex flex-col">
+                <h3 className="text-base font-semibold text-white mb-2 flex items-center">
+                  <DollarSign className="w-4 h-4 mr-2" />
                   Pricing
                 </h3>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400 mb-2">
+                <div className="text-center mt-auto">
+                  <div className="text-xl font-bold text-green-400 mb-1">
                     ${prompt.price || 0}
                   </div>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-gray-400 text-[11px] mb-2">
                     {prompt.price > 0 ? 'Premium Prompt' : 'Free Prompt'}
                   </p>
+                  {prompt.price <= 0 && (
+                    <button className="w-full flex items-center justify-center px-2.5 py-2 bg-green-500/20 text-green-300 rounded-md text-[11px] font-medium border border-green-500/30 hover:bg-green-500/30 transition-colors">
+                      <CheckCircle className="w-3 h-3 mr-1.5" />
+                      Free to Use
+                    </button>
+                  )}
                 </div>
               </div>
 
               {/* Performance Stats */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <Star className="w-5 h-5 mr-2" />
+              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-3 flex-[1.2] flex flex-col">
+                <h3 className="text-base font-semibold text-white mb-2 flex items-center">
+                  <Star className="w-3.5 h-3.5 mr-2" />
                   Performance
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2 text-xs mt-auto">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Sales</span>
                     <span className="text-white font-semibold">{prompt.sales || 0}</span>
@@ -214,7 +230,7 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Rating</span>
                     <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                      <Star className="w-3 h-3 text-yellow-400 mr-1" />
                       <span className="text-white font-semibold">{prompt.rating || 0}</span>
                     </div>
                   </div>
@@ -224,7 +240,7 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Status</span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                       prompt.status === 'active' 
                         ? 'bg-green-500/20 text-green-300' 
                         : prompt.status === 'pending'
@@ -238,43 +254,25 @@ const PromptDetailModal = ({ isOpen, onClose, prompt }) => {
               </div>
 
               {/* Author Info */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2" />
+              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-4 flex-[0.7]">
+                <h3 className="text-lg font-semibold text-white mb-2.5 flex items-center">
+                  <User className="w-4 h-4 mr-2" />
                   Author
                 </h3>
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
+                  <div className="w-9 h-9 bg-purple-500 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <p className="text-white font-medium">{prompt.author?.name || 'You'}</p>
-                    <p className="text-gray-400 text-sm">
+                    <p className="text-gray-400 text-xs">
                       {prompt.author?.role === 'admin' ? 'Admin' : 'Creator'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Timestamps */}
-              <div className="bg-slate-700/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Timeline
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-gray-400">Created:</span>
-                    <p className="text-white">{formatDate(prompt.createdAt)}</p>
-                  </div>
-                  {prompt.updatedAt && prompt.updatedAt !== prompt.createdAt && (
-                    <div>
-                      <span className="text-gray-400">Last Updated:</span>
-                      <p className="text-white">{formatDate(prompt.updatedAt)}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Removed Timeline as requested */}
             </div>
           </div>
         </div>

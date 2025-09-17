@@ -9,6 +9,7 @@ import { commentsAPI } from '../../services/commentsAPI';
 import { useAuth } from '../../contexts/AuthContext';
 import UserProfileModal from '../UserProfileModal';
 import PaymentModal from '../PaymentModal';
+import PromptDetailModal from '../PromptDetailModal';
 
 const Feed = () => {
   const { user } = useAuth();
@@ -20,6 +21,8 @@ const Feed = () => {
   const [deletingPrompt, setDeletingPrompt] = useState(null);
   const [purchasedPrompts, setPurchasedPrompts] = useState(new Set());
   const [purchasingPrompt, setPurchasingPrompt] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedPromptForDetail, setSelectedPromptForDetail] = useState(null);
   
   // Follow and favorites state
   const [followingUsers, setFollowingUsers] = useState(new Set());
@@ -207,14 +210,14 @@ const Feed = () => {
           image: prompt.image || 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg',
           likes: prompt.likesCount || 0,
           comments: prompt.commentsCount || 0,
-          aiTool: prompt.category === 'Art & Design' ? 'DALL-E 3' : 
+          aiTool: prompt.aiModel || (prompt.category === 'Art & Design' ? 'DALL-E 3' : 
                   prompt.category === 'Photography' ? 'Midjourney' :
                   prompt.category === 'Writing' ? 'GPT-4o' :
                   prompt.category === 'Marketing' ? 'Claude 3.5' :
                   prompt.category === 'Business' ? 'Gemini Pro' :
                   prompt.category === 'Education' ? 'Perplexity' :
                   prompt.category === 'Entertainment' ? 'RunwayML' :
-                  prompt.category === 'Technology' ? 'Mistral Large' : 'AI Generator',
+                  prompt.category === 'Technology' ? 'Mistral Large' : 'AI Generator'),
           category: prompt.category,
           timeAgo: formatTimeAgo(prompt.createdAt),
           price: prompt.price || 0,
@@ -678,7 +681,33 @@ const Feed = () => {
               .map((post) => (
             <div
               key={post.id}
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all"
+              className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all cursor-pointer"
+              onClick={() => {
+                if (post.price > 0 && !purchasedPrompts.has(post.id)) {
+                  handlePurchase(post);
+                } else {
+                  setSelectedPromptForDetail({
+                    id: post.id,
+                    title: post.title,
+                    description: post.description,
+                    prompt: post.prompt,
+                    category: post.category,
+                    tags: post.tags || [],
+                    price: post.price,
+                    image: post.image,
+                    author: { _id: post.author?.id, name: post.user?.name },
+                    createdAt: post.createdAt,
+                    updatedAt: post.updatedAt,
+                    likes: post.likes,
+                    views: post.views,
+                    reviews: [],
+                    rating: post.rating || 0,
+                    aiModel: post.aiTool || null,
+                    isPublic: true,
+                  });
+                  setShowDetailModal(true);
+                }
+              }}
             >
               {/* Post Header */}
               <div className="p-4 border-b border-white/10">
@@ -977,6 +1006,13 @@ const Feed = () => {
         }}
         prompt={selectedPromptForPurchase}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* Prompt Detail Modal */}
+      <PromptDetailModal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        prompt={selectedPromptForDetail}
       />
     </div>
   );

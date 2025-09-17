@@ -1,6 +1,7 @@
 import Prompt from '../models/Prompt.js';
 import Purchase from '../models/Purchase.js';
 import User from '../models/User.js';
+import Follow from '../models/Follow.js';
 
 // Get user dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -28,9 +29,8 @@ export const getDashboardStats = async (req, res) => {
     const averageRating = userPrompts.length > 0 ? 
       (4.2 + Math.random() * 0.8).toFixed(1) : 0;
 
-    // Get followers count (if we had a follow system)
-    // For now, we'll use a placeholder
-    const followers = Math.floor(Math.random() * 2000) + 500;
+    // Get actual followers count from database
+    const followers = await Follow.countDocuments({ following: userId });
 
     // Get recent activity
     const recentActivity = await getRecentActivity(userId, purchases);

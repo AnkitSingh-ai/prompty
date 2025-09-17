@@ -3,6 +3,7 @@ import { Search, Filter, Star, ShoppingCart, Eye, Heart, TrendingUp, CreditCard,
 import { promptAPI } from '../../services/promptAPI';
 import { purchaseAPI } from '../../services/purchaseAPI';
 import PaymentModal from '../PaymentModal';
+import PromptDetailModal from '../PromptDetailModal';
 
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,6 +17,10 @@ const Marketplace = () => {
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPromptForPurchase, setSelectedPromptForPurchase] = useState(null);
+  
+  // Detail modal state
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedPromptForDetail, setSelectedPromptForDetail] = useState(null);
 
   const categories = [
     { id: 'all', label: 'All Categories' },
@@ -68,15 +73,20 @@ const Marketplace = () => {
           id: prompt._id,
           title: prompt.title,
           description: prompt.description,
+          prompt: prompt.prompt, // Include the actual prompt content
           price: prompt.price || 0,
           rating: prompt.rating || 0,
           reviews: prompt.reviews?.length || 0,
           author: prompt.author?.name || 'Anonymous',
+          authorId: prompt.author?._id,
           authorAvatar: '👤',
           category: prompt.category,
           tags: prompt.tags || [],
           preview: prompt.image || 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg',
           sales: prompt.sales || 0,
+          likes: prompt.likesCount || 0,
+          views: prompt.views || 0,
+          createdAt: prompt.createdAt,
           isFeatured: prompt.rating >= 4.5, // Mark high-rated prompts as featured
         };
       });
@@ -139,6 +149,35 @@ const Marketplace = () => {
       console.error('Purchase processing failed:', error);
       alert(error.response?.data?.message || 'Purchase processing failed. Please contact support.');
     }
+  };
+
+  const handleViewFreePrompt = (prompt) => {
+    // Transform marketplace prompt to detail modal format
+    const detailPrompt = {
+      _id: prompt.id,
+      title: prompt.title,
+      description: prompt.description,
+      prompt: prompt.prompt || 'Prompt content not available',
+      price: prompt.price,
+      category: prompt.category,
+      tags: prompt.tags,
+      image: prompt.preview,
+      author: {
+        name: prompt.author,
+        _id: prompt.authorId
+      },
+      rating: prompt.rating,
+      sales: prompt.sales,
+      likes: prompt.likes || 0,
+      views: prompt.views || 0,
+      reviews: prompt.reviews || [],
+      createdAt: prompt.createdAt || new Date().toISOString(),
+      isPublic: true,
+      status: 'active'
+    };
+    
+    setSelectedPromptForDetail(detailPrompt);
+    setShowDetailModal(true);
   };
 
   const filteredPrompts = prompts.filter(prompt => {
@@ -251,7 +290,10 @@ const Marketplace = () => {
                       {prompt.title}
                     </h3>
                     <button
-                      onClick={() => handleLike(prompt.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleLike(prompt.id);
+                      }}
                       className={`transition-colors ${
                         likedPrompts.has(prompt.id)
                           ? 'text-red-400'
@@ -302,7 +344,10 @@ const Marketplace = () => {
                       </button>
                     ) : prompt.price > 0 ? (
                       <button 
-                        onClick={() => handlePurchase(prompt)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePurchase(prompt);
+                        }}
                         disabled={purchasingPrompt === prompt.id}
                         className="flex-1 flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -364,7 +409,10 @@ const Marketplace = () => {
               {filteredPrompts.map((prompt) => (
               <div
                 key={prompt.id}
-                className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all group"
+                className={`bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all group ${
+                  prompt.price <= 0 ? 'cursor-pointer' : ''
+                }`}
+                onClick={prompt.price <= 0 ? () => handleViewFreePrompt(prompt) : undefined}
               >
                 <div className="aspect-square relative overflow-hidden">
                   <img
@@ -412,9 +460,15 @@ const Marketplace = () => {
                       )}
                     </button>
                   ) : (
-                    <button className="w-full flex items-center justify-center px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium border border-blue-500/30">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewFreePrompt(prompt);
+                      }}
+                      className="w-full flex items-center justify-center px-3 py-2 bg-blue-500/20 text-blue-300 rounded-lg text-sm font-medium border border-blue-500/30 hover:bg-blue-500/30 transition-colors cursor-pointer"
+                    >
                       <Eye className="w-4 h-4 mr-2" />
-                      Free
+                      View Free
                     </button>
                   )}
                 </div>
@@ -454,6 +508,16 @@ const Marketplace = () => {
         }}
         prompt={selectedPromptForPurchase}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* Prompt Detail Modal */}
+      <PromptDetailModal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedPromptForDetail(null);
+        }}
+        prompt={selectedPromptForDetail}
       />
     </div>
   );

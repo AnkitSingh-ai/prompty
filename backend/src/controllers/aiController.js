@@ -16,41 +16,101 @@ const anthropic = new Anthropic({
 // Image Generation Controllers
 export const generateImageWithDALLE = async (req, res) => {
   try {
-    const { prompt, model = 'dall-e-3', size = '1024x1024', quality = 'standard' } = req.body;
+    const { prompt, model = 'dall-e-3', size = '1024x1024', quality = 'standard', imageUrl } = req.body;
+
+    console.log('DALL-E Request:', { model, size, quality, hasImageUrl: !!imageUrl, promptLength: prompt?.length });
 
     if (!process.env.OPENAI_API_KEY) {
+      console.error('OpenAI API key not configured');
       return res.status(400).json({ 
         success: false, 
         error: 'OpenAI API key not configured' 
       });
     }
 
-    const response = await openai.images.generate({
-      model,
-      prompt,
-      size,
-      quality,
-      n: 1,
-    });
+    if (!prompt || prompt.trim().length === 0) {
+      console.error('Empty prompt provided');
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Prompt is required' 
+      });
+    }
 
-    res.json({
-      success: true,
-      imageUrl: response.data[0].url,
-      model,
-      prompt,
-    });
+    // If imageUrl is provided, this is an image-to-image generation request
+    if (imageUrl) {
+      // For DALL-E, we can use the image as a reference in the prompt
+      // Note: DALL-E 3 doesn't support direct image-to-image, but we can describe the uploaded image
+      const enhancedPrompt = `Based on this reference image: ${imageUrl}, ${prompt}`;
+      
+      console.log('Generating with enhanced prompt:', enhancedPrompt);
+      
+      const response = await openai.images.generate({
+        model,
+        prompt: enhancedPrompt,
+        size,
+        quality,
+        n: 1,
+      });
+
+      console.log('DALL-E response received:', { model, hasImage: !!response.data[0]?.url });
+
+      res.json({
+        success: true,
+        imageUrl: response.data[0].url,
+        model,
+        prompt: enhancedPrompt,
+        referenceImage: imageUrl,
+      });
+    } else {
+      // Regular text-to-image generation
+      console.log('Generating with prompt:', prompt);
+      
+      const response = await openai.images.generate({
+        model,
+        prompt,
+        size,
+        quality,
+        n: 1,
+      });
+
+      console.log('DALL-E response received:', { model, hasImage: !!response.data[0]?.url });
+
+      res.json({
+        success: true,
+        imageUrl: response.data[0].url,
+        model,
+        prompt,
+      });
+    }
   } catch (error) {
     console.error('DALL-E Error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to generate image with DALL-E';
+    
+    if (error.code === 'insufficient_quota') {
+      errorMessage = 'OpenAI API quota exceeded. Please check your billing.';
+    } else if (error.code === 'billing_hard_limit_reached') {
+      errorMessage = 'OpenAI billing hard limit reached. Please add payment method to your account.';
+    } else if (error.code === 'invalid_api_key') {
+      errorMessage = 'Invalid OpenAI API key. Please check your configuration.';
+    } else if (error.code === 'rate_limit_exceeded') {
+      errorMessage = 'Rate limit exceeded. Please try again later.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     res.status(500).json({ 
       success: false, 
-      error: error.message || 'Failed to generate image with DALL-E' 
+      error: errorMessage,
+      code: error.code || 'unknown_error'
     });
   }
 };
 
 export const generateImageWithGemini = async (req, res) => {
   try {
-    const { prompt, model = 'gemini-nano' } = req.body;
+    const { prompt, model = 'gemini-1.5-flash', imageUrl } = req.body;
 
     if (!process.env.GOOGLE_API_KEY) {
       return res.status(400).json({ 
@@ -60,12 +120,15 @@ export const generateImageWithGemini = async (req, res) => {
     }
 
     // Note: Gemini image generation is still in development
-    // This is a placeholder implementation
+    // This is a placeholder implementation that includes image reference
+    const enhancedPrompt = imageUrl ? `Based on this reference image: ${imageUrl}, ${prompt}` : prompt;
+    
     res.json({
       success: true,
       imageUrl: 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg',
       model,
-      prompt,
+      prompt: enhancedPrompt,
+      referenceImage: imageUrl,
       note: 'Gemini image generation coming soon'
     });
   } catch (error) {
@@ -79,15 +142,18 @@ export const generateImageWithGemini = async (req, res) => {
 
 export const generateImageWithStableDiffusion = async (req, res) => {
   try {
-    const { prompt, model = 'stable-diffusion-xl' } = req.body;
+    const { prompt, model = 'stable-diffusion-xl', imageUrl } = req.body;
 
     // Placeholder for Stable Diffusion API integration
     // You would integrate with services like Replicate, Hugging Face, or Stability AI
+    const enhancedPrompt = imageUrl ? `Based on this reference image: ${imageUrl}, ${prompt}` : prompt;
+    
     res.json({
       success: true,
       imageUrl: 'https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg',
       model,
-      prompt,
+      prompt: enhancedPrompt,
+      referenceImage: imageUrl,
       note: 'Stable Diffusion integration coming soon'
     });
   } catch (error) {
@@ -177,7 +243,7 @@ export const generateTextWithClaude = async (req, res) => {
 
 export const generateTextWithGemini = async (req, res) => {
   try {
-    const { prompt, model = 'gemini-pro-1.5', max_tokens = 1000 } = req.body;
+    const { prompt, model = 'gemini-1.5-flash', max_tokens = 1000 } = req.body;
 
     if (!process.env.GOOGLE_API_KEY) {
       return res.status(400).json({ 
@@ -427,10 +493,31 @@ export const checkAPIKeys = async (req, res) => {
       anthropic: !!process.env.ANTHROPIC_API_KEY,
     };
 
+    // Test OpenAI API key if available
+    let openaiTest = false;
+    if (keys.openai) {
+      try {
+        // Simple test to verify the API key works
+        await openai.models.list();
+        openaiTest = true;
+      } catch (error) {
+        console.error('OpenAI API key test failed:', error.message);
+        openaiTest = false;
+      }
+    }
+
     res.json({
       success: true,
-      keys,
-      configured: Object.values(keys).some(key => key)
+      keys: {
+        ...keys,
+        openai: openaiTest // Only true if key exists AND works
+      },
+      configured: Object.values({ ...keys, openai: openaiTest }).some(key => key),
+      details: {
+        openaiKeyLength: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.length : 0,
+        googleKeyLength: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.length : 0,
+        anthropicKeyLength: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.length : 0,
+      }
     });
   } catch (error) {
     console.error('Check API Keys Error:', error);

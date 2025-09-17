@@ -12,7 +12,8 @@ const CreatePromptModal = ({ isOpen, onClose, onPromptCreated }) => {
     tags: '',
     price: '',
     isPublic: true,
-    image: null
+    image: null,
+    aiModel: ''
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -139,7 +140,8 @@ const CreatePromptModal = ({ isOpen, onClose, onPromptCreated }) => {
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
         price: formData.price ? parseFloat(formData.price) : 0,
         isPublic: formData.isPublic,
-        image: imageUrl
+        image: imageUrl,
+        aiModel: formData.aiModel || null
       };
 
       console.log('Sending prompt data:', promptData);
@@ -164,7 +166,8 @@ const CreatePromptModal = ({ isOpen, onClose, onPromptCreated }) => {
         tags: '',
         price: '',
         isPublic: true,
-        image: null
+        image: null,
+        aiModel: ''
       });
       setImagePreview(null);
 
@@ -327,6 +330,26 @@ const CreatePromptModal = ({ isOpen, onClose, onPromptCreated }) => {
                 className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
               />
             </div>
+          </div>
+
+          {/* AI Model */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              AI Model Used
+            </label>
+            <div className="relative">
+              <Sparkles className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={formData.aiModel}
+                onChange={(e) => handleInputChange('aiModel', e.target.value)}
+                placeholder="e.g., DALL-E 3, Midjourney, Stable Diffusion, GPT-4, Claude, etc."
+                className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Specify which AI model was used to generate the content for this prompt
+            </p>
           </div>
 
           {/* Image Upload */}

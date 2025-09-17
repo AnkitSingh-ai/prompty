@@ -62,6 +62,12 @@ const promptSchema = new mongoose.Schema({
     type: String, // URL to the preview image
     default: null
   },
+  aiModel: {
+    type: String,
+    trim: true,
+    maxlength: [50, 'AI model name cannot be more than 50 characters'],
+    default: null
+  },
   sales: {
     type: Number,
     default: 0,

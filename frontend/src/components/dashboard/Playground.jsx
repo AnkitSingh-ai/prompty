@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Zap, Image, Video, Type, Settings, Download, Copy, RefreshCw } from 'lucide-react';
+import { Zap, Image, Video, Type, Settings, Download, Copy, RefreshCw, Upload, X } from 'lucide-react';
 import { aiAPI } from '../../services/aiAPI';
+import { uploadAPI } from '../../services/uploadAPI';
 
 const Playground = () => {
   const [activeTab, setActiveTab] = useState('image');
@@ -9,6 +10,11 @@ const Playground = () => {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [error, setError] = useState(null);
   const [apiKeysConfigured, setApiKeysConfigured] = useState(false);
+  
+  // Image upload state
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const tabs = [
     { id: 'image', label: 'Images', icon: Image },
@@ -20,11 +26,11 @@ const Playground = () => {
   const aiModels = {
     image: [
       'DALL-E 3', // OpenAI's latest image generator
-      'ChatGPT', // OpenAI's conversational AI with image generation
+      'DALL-E 2', // OpenAI's previous image generator
       'Midjourney', // Most popular artistic AI
       'Stable Diffusion XL', // Open source leader
       'Adobe Firefly', // Adobe's commercial AI
-      'Gemini Nano', // Google's latest model
+      'Gemini 1.5 Flash', // Google's latest model
       'Leonardo AI', // Character design specialist
       'Ideogram', // Text in images expert
       'Flux Pro', // High-quality generation
@@ -75,6 +81,7 @@ const Playground = () => {
     const checkAPIKeys = async () => {
       try {
         const result = await aiAPI.checkAPIKeys();
+        console.log('API Keys Status:', result);
         setApiKeysConfigured(result.configured);
       } catch (error) {
         console.error('Failed to check API keys:', error);
@@ -84,27 +91,146 @@ const Playground = () => {
     checkAPIKeys();
   }, []);
 
+  // Image upload handler
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 10MB for AI processing)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload image
+      const uploadResult = await uploadAPI.uploadImage(file);
+      if (uploadResult.success) {
+        setUploadedImage(uploadResult.imageUrl);
+        alert('Image uploaded successfully! You can now use it in your prompts.');
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove uploaded image
+  const removeUploadedImage = () => {
+    setUploadedImage(null);
+    setImagePreview(null);
+  };
+
+  // Remove generated content
+  const removeGeneratedContent = () => {
+    setGeneratedContent(null);
+    setError(null);
+  };
+
+  // Clear all content (generated content, uploaded image, and prompt)
+  const clearAll = () => {
+    setGeneratedContent(null);
+    setError(null);
+    setUploadedImage(null);
+    setImagePreview(null);
+    setPrompt('');
+  };
+
+  // Copy prompt to clipboard
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      alert('Prompt copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy prompt:', error);
+      alert('Failed to copy prompt');
+    }
+  };
+
+  // Clear prompt only
+  const clearPrompt = () => {
+    setPrompt('');
+  };
+
+  // Download generated content
+  const downloadContent = async () => {
+    if (!generatedContent) return;
+    
+    try {
+      if (activeTab === 'image') {
+        // For images, create a download link
+        const link = document.createElement('a');
+        link.href = generatedContent;
+        link.download = `ai-generated-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For text content, create a text file
+        const blob = new Blob([generatedContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ai-generated-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download content');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
+    
+    // Check if API keys are configured
+    if (!apiKeysConfigured) {
+      setError('API keys are not configured. Please check your backend environment variables.');
+      return;
+    }
     
     setGenerating(true);
     setError(null);
     setGeneratedContent(null);
 
     try {
+      console.log('Generating with model:', selectedModel, 'for type:', activeTab);
       let result;
       
       switch (activeTab) {
         case 'image':
-          if (selectedModel.includes('DALL-E') || selectedModel.includes('ChatGPT')) {
-            result = await aiAPI.generateImageWithDALLE(prompt);
+          if (selectedModel.includes('DALL-E')) {
+            // Determine which DALL-E model to use
+            const dalleModel = selectedModel.includes('DALL-E 2') ? 'dall-e-2' : 'dall-e-3';
+            result = await aiAPI.generateImageWithDALLE(prompt, dalleModel, '1024x1024', 'standard', uploadedImage);
           } else if (selectedModel.includes('Gemini')) {
-            result = await aiAPI.generateImageWithGemini(prompt);
+            result = await aiAPI.generateImageWithGemini(prompt, 'gemini-nano', uploadedImage);
           } else if (selectedModel.includes('Stable')) {
-            result = await aiAPI.generateImageWithStableDiffusion(prompt);
+            result = await aiAPI.generateImageWithStableDiffusion(prompt, 'stable-diffusion-xl', uploadedImage);
           } else {
             // Fallback for other models
-            result = await aiAPI.generateContent('image', selectedModel, prompt);
+            result = await aiAPI.generateContent('image', selectedModel, prompt, { imageUrl: uploadedImage });
           }
           setGeneratedContent(result.imageUrl);
           break;
@@ -157,7 +283,27 @@ const Playground = () => {
 
     } catch (error) {
       console.error('Generation error:', error);
-      setError(error.message || 'Failed to generate content. Please try again.');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to generate content. Please try again.';
+      
+      if (error.message.includes('OpenAI API key not configured')) {
+        errorMessage = 'OpenAI API key is not configured. Please check your backend environment variables.';
+      } else if (error.message.includes('billing_hard_limit_reached') || error.message.includes('Billing hard limit')) {
+        errorMessage = 'OpenAI billing limit reached. Please add payment method to your OpenAI account or try a different model.';
+      } else if (error.message.includes('insufficient_quota')) {
+        errorMessage = 'OpenAI quota exceeded. Please add billing information to your OpenAI account.';
+      } else if (error.message.includes('Failed to generate image with DALL-E')) {
+        errorMessage = 'DALL-E image generation failed. Please check your OpenAI API key and billing status.';
+      } else if (error.message.includes('Failed to generate image with Gemini')) {
+        errorMessage = 'Gemini image generation failed. Please check your Google API key and try again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error occurred. Please check your API keys and try again.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid request. Please check your prompt and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setGenerating(false);
     }
@@ -303,6 +449,70 @@ const Playground = () => {
               </select>
             </div>
 
+            {/* Image Upload Section - Only show for image generation */}
+            {activeTab === 'image' && (
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Upload className="w-5 h-5 mr-2" />
+                  Reference Image
+                </h3>
+                
+                {!uploadedImage ? (
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                        disabled={uploadingImage}
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center space-y-2"
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                            <span className="text-sm text-gray-300">Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 text-gray-400" />
+                            <span className="text-sm text-gray-300">Upload an image</span>
+                            <span className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center">
+                      Upload a reference image to guide the AI generation
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Uploaded reference"
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={removeUploadedImage}
+                        className="absolute top-2 right-2 p-1 bg-red-500/80 text-white rounded-full hover:bg-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-green-400 text-center">
+                      ✓ Reference image uploaded successfully
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Example Prompts */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
               <h3 className="text-lg font-semibold text-white mb-4">Example Prompts</h3>
@@ -350,21 +560,52 @@ const Playground = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Prompt Input */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Your Prompt</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Your Prompt</h3>
+                {uploadedImage && activeTab === 'image' && (
+                  <div className="flex items-center text-sm text-green-400">
+                    <Image className="w-4 h-4 mr-1" />
+                    Reference image attached
+                  </div>
+                )}
+              </div>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={`Describe what you want to generate...`}
+                placeholder={
+                  uploadedImage && activeTab === 'image' 
+                    ? "Describe how you want to modify or enhance the uploaded image..." 
+                    : "Describe what you want to generate..."
+                }
                 className="w-full h-32 p-4 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 resize-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
               />
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center space-x-2">
-                  <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                  <button 
+                    onClick={copyPrompt}
+                    disabled={!prompt.trim()}
+                    className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Copy prompt to clipboard"
+                  >
                     <Copy className="w-4 h-4" />
                   </button>
-                  <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                  <button 
+                    onClick={clearPrompt}
+                    disabled={!prompt.trim()}
+                    className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Clear prompt"
+                  >
                     <RefreshCw className="w-4 h-4" />
                   </button>
+                  {(generatedContent || uploadedImage || prompt.trim()) && (
+                    <button 
+                      onClick={clearAll}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 hover:text-red-200 transition-colors"
+                      title="Clear all content"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={handleGenerate}
@@ -382,10 +623,22 @@ const Playground = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Generated Content</h3>
                 {generatedContent && (
-                  <button className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={downloadContent}
+                      className="flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </button>
+                    <button 
+                      onClick={removeGeneratedContent}
+                      className="flex items-center px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-300 hover:text-red-200 transition-colors"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Remove
+                    </button>
+                  </div>
                 )}
               </div>
 

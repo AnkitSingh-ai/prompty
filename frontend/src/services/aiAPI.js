@@ -22,13 +22,14 @@ class AIAPI {
   }
 
   // Image Generation APIs
-  async generateImageWithDALLE(prompt, model = 'dall-e-3', size = '1024x1024', quality = 'standard') {
+  async generateImageWithDALLE(prompt, model = 'dall-e-3', size = '1024x1024', quality = 'standard', imageUrl = null) {
     try {
       const response = await this.api.post('/generate-image/dalle', {
         prompt,
         model,
         size,
         quality,
+        imageUrl, // Include uploaded image URL for image-to-image generation
       });
       return response.data;
     } catch (error) {
@@ -37,11 +38,12 @@ class AIAPI {
     }
   }
 
-  async generateImageWithGemini(prompt, model = 'gemini-nano') {
+  async generateImageWithGemini(prompt, model = 'gemini-nano', imageUrl = null) {
     try {
       const response = await this.api.post('/generate-image/gemini', {
         prompt,
         model,
+        imageUrl, // Include uploaded image URL for image-to-image generation
       });
       return response.data;
     } catch (error) {
@@ -50,11 +52,12 @@ class AIAPI {
     }
   }
 
-  async generateImageWithStableDiffusion(prompt, model = 'stable-diffusion-xl') {
+  async generateImageWithStableDiffusion(prompt, model = 'stable-diffusion-xl', imageUrl = null) {
     try {
       const response = await this.api.post('/generate-image/stable-diffusion', {
         prompt,
         model,
+        imageUrl, // Include uploaded image URL for image-to-image generation
       });
       return response.data;
     } catch (error) {

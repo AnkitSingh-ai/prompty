@@ -10,7 +10,8 @@ const EditPromptModal = ({ isOpen, onClose, prompt, onPromptUpdated }) => {
     tags: [],
     price: 0,
     isPublic: true,
-    image: null
+    image: null,
+    aiModel: ''
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,8 @@ const EditPromptModal = ({ isOpen, onClose, prompt, onPromptUpdated }) => {
         tags: prompt.tags || [],
         price: prompt.price || 0,
         isPublic: prompt.isPublic !== undefined ? prompt.isPublic : true,
-        image: prompt.image || null
+        image: prompt.image || null,
+        aiModel: prompt.aiModel || ''
       });
       setImagePreview(prompt.image || null);
       setError('');
@@ -164,7 +166,8 @@ const EditPromptModal = ({ isOpen, onClose, prompt, onPromptUpdated }) => {
         tags: formData.tags,
         price: parseFloat(formData.price),
         isPublic: formData.isPublic,
-        image: imageUrl
+        image: imageUrl,
+        aiModel: formData.aiModel || null
       };
 
       console.log('Sending edit prompt data:', promptData);
@@ -187,7 +190,8 @@ const EditPromptModal = ({ isOpen, onClose, prompt, onPromptUpdated }) => {
         tags: [],
         price: 0,
         isPublic: true,
-        image: null
+        image: null,
+        aiModel: ''
       });
       setImagePreview(null);
       
@@ -290,6 +294,21 @@ const EditPromptModal = ({ isOpen, onClose, prompt, onPromptUpdated }) => {
               rows={4}
               required
             />
+          </div>
+
+          {/* AI Model Used */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              AI Model Used
+            </label>
+            <input
+              type="text"
+              value={formData.aiModel}
+              onChange={(e) => handleInputChange('aiModel', e.target.value)}
+              className="w-full px-4 py-3 bg-slate-700 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="e.g., DALL-E 3, Midjourney, Stable Diffusion, GPT-4, Claude 3.5"
+            />
+            <p className="text-xs text-gray-400 mt-1">Shown on cards and details view.</p>
           </div>
 
           {/* Category and Price */}

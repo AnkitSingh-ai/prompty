@@ -126,22 +126,13 @@ const Profile = () => {
       if (isFollowing) {
         await followAPI.unfollowUser(userProfile._id);
         setIsFollowing(false);
-        // Update followers count
-        setStats(prevStats => prevStats.map(stat => 
-          stat.label === 'Followers' 
-            ? { ...stat, value: (parseInt(stat.value.replace(/,/g, '')) - 1).toLocaleString() }
-            : stat
-        ));
       } else {
         await followAPI.followUser(userProfile._id);
         setIsFollowing(true);
-        // Update followers count
-        setStats(prevStats => prevStats.map(stat => 
-          stat.label === 'Followers' 
-            ? { ...stat, value: (parseInt(stat.value.replace(/,/g, '')) + 1).toLocaleString() }
-            : stat
-        ));
       }
+      
+      // Refresh dashboard stats to get accurate follower count
+      await loadDashboardStats();
     } catch (error) {
       console.error('Follow/Unfollow error:', error);
       alert(error.message);
