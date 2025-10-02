@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CheckCircle, UserPlus, UserMinus, Copy } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CheckCircle, UserPlus, UserMinus, Copy, Search, X } from 'lucide-react';
 import { promptAPI } from '../../services/promptAPI';
 import { purchaseAPI } from '../../services/purchaseAPI';
 import { followAPI } from '../../services/followAPI';
@@ -14,6 +14,8 @@ import PromptDetailModal from '../PromptDetailModal';
 const Feed = () => {
   const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [savedPosts, setSavedPosts] = useState(new Set());
   const [posts, setPosts] = useState([]);
@@ -606,6 +608,26 @@ const Feed = () => {
     setSelectedUserId(null);
   };
 
+  // Filter posts based on search query
+  const filteredPosts = posts.filter((post) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      post.title?.toLowerCase().includes(query) ||
+      post.description?.toLowerCase().includes(query) ||
+      post.prompt?.toLowerCase().includes(query) ||
+      post.category?.toLowerCase().includes(query) ||
+      post.user?.name?.toLowerCase().includes(query) ||
+      post.aiTool?.toLowerCase().includes(query)
+    );
+  }).filter((post) => {
+    if (activeFilter === 'following') {
+      return followingUsers.has(post.author?.id);
+    }
+    return true;
+  });
+
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
@@ -620,7 +642,7 @@ const Feed = () => {
             Explore trending AI-generated content from our community
           </p>
             </div>
-            <button 
+            <button
               onClick={loadPrompts}
               disabled={loading}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -628,6 +650,33 @@ const Feed = () => {
               {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search prompts, users, categories, or AI tools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-12 py-3 bg-slate-800/50 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="mt-2 text-sm text-gray-400">
+              Found {filteredPosts.length} result{filteredPosts.length !== 1 ? 's' : ''} for "{searchQuery}"
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -660,25 +709,32 @@ const Feed = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
               <p className="text-gray-400">Loading prompts...</p>
             </div>
-          ) : posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-400 mb-4">No prompts found. Be the first to create one!</p>
-              <button 
-                onClick={loadPrompts}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Refresh
-              </button>
+              {searchQuery ? (
+                <>
+                  <p className="text-gray-400 mb-4">No prompts found matching "{searchQuery}"</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-400 mb-4">No prompts found. Be the first to create one!</p>
+                  <button
+                    onClick={loadPrompts}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                </>
+              )}
             </div>
           ) : (
-            posts
-              .filter((post) => {
-                if (activeFilter === 'following') {
-                  return followingUsers.has(post.author?.id);
-                }
-                return true;
-              })
-              .map((post) => (
+            filteredPosts.map((post) => (
             <div
               key={post.id}
               className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden hover:border-purple-500/30 transition-all cursor-pointer"

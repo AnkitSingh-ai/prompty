@@ -16,6 +16,7 @@ import favoriteRoutes from './routes/favoriteRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
 import commentRoutes from './routes/commentRoutes.js';
 import userProfileRoutes from './routes/userProfileRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 // Import models to ensure they are registered with Mongoose
 import './models/User.js';
@@ -76,6 +77,7 @@ app.use('/api/favorites', favoriteRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/user-profile', userProfileRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
