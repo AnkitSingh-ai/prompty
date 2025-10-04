@@ -88,6 +88,15 @@ const promptSchema = new mongoose.Schema({
     default: 0,
     min: [0, 'Comments count cannot be negative']
   },
+  viewsCount: {
+    type: Number,
+    default: 0,
+    min: [0, 'Views count cannot be negative']
+  },
+  isPremium: {
+    type: Boolean,
+    default: false
+  },
   rating: {
     type: Number,
     default: 0,

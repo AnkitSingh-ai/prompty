@@ -64,6 +64,19 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  membership: {
+    type: String,
+    enum: ['free', 'premium'],
+    default: 'free'
+  },
+  membershipExpiresAt: {
+    type: Date,
+    default: null
+  },
+  canEarnMoney: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
