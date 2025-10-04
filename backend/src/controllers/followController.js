@@ -50,9 +50,16 @@ export const followUser = async (req, res) => {
       $inc: { followingCount: 1 }
     });
 
-    await User.findByIdAndUpdate(userId, {
+    const updatedUser = await User.findByIdAndUpdate(userId, {
       $inc: { followersCount: 1 }
-    });
+    }, { new: true });
+
+    // Check if user reached 500 followers milestone - enable earning capability
+    if (updatedUser.followersCount >= 500 && !updatedUser.canEarnMoney) {
+      updatedUser.canEarnMoney = true;
+      await updatedUser.save();
+      console.log(`User ${updatedUser.name} reached 500 followers! Earning capability enabled.`);
+    }
 
     res.json({
       success: true,
@@ -97,9 +104,16 @@ export const unfollowUser = async (req, res) => {
       $inc: { followingCount: -1 }
     });
 
-    await User.findByIdAndUpdate(userId, {
+    const updatedUser = await User.findByIdAndUpdate(userId, {
       $inc: { followersCount: -1 }
-    });
+    }, { new: true });
+
+    // Check if user fell below 500 followers - disable earning capability (except for admins)
+    if (updatedUser.followersCount < 500 && updatedUser.canEarnMoney && updatedUser.role !== 'admin') {
+      updatedUser.canEarnMoney = false;
+      await updatedUser.save();
+      console.log(`User ${updatedUser.name} fell below 500 followers. Earning capability disabled.`);
+    }
 
     res.json({
       success: true,

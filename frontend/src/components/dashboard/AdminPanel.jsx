@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, FileText, DollarSign, TrendingUp, CircleAlert as AlertCircle, CircleCheck as CheckCircle, Clock, RefreshCw, Loader } from 'lucide-react';
+import { Shield, Users, FileText, DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Clock, RefreshCw, Loader } from 'lucide-react';
 import adminAPI from '../../services/adminAPI';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -170,7 +170,7 @@ const AdminPanel = () => {
                         className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg transition-colors"
                         title="Approve"
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <Check className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleRejectPrompt(prompt.id)}
@@ -405,7 +405,7 @@ const AdminPanel = () => {
                               onClick={() => handleApprovePrompt(prompt.id)}
                               className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-lg transition-colors flex items-center"
                             >
-                              <CheckCircle className="w-4 h-4 mr-2" />
+                              <Check className="w-4 h-4 mr-2" />
                               Approve
                             </button>
                             <button

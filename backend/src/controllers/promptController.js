@@ -1,4 +1,5 @@
 import Prompt from '../models/Prompt.js';
+import User from '../models/User.js';
 import { validationResult } from 'express-validator';
 
 // @desc    Create a new prompt
@@ -23,7 +24,8 @@ export const createPrompt = async (req, res) => {
       price,
       isPublic,
       image,
-      aiModel
+      aiModel,
+      isPremium
     } = req.body;
 
     // Debug: Log what we're receiving
@@ -37,10 +39,32 @@ export const createPrompt = async (req, res) => {
       isPublic,
       image,
       imageType: typeof image,
-      aiModel
+      aiModel,
+      isPremium
     });
 
-    // Always use real MongoDB - no more mock data
+    // Get user with follower count
+    const user = await User.findById(req.user.id);
+    const isAdmin = user.role === 'admin';
+
+    // Check if user can create paid prompts (500 follower requirement)
+    if (price > 0 && !isAdmin) {
+      if (user.followersCount < 500) {
+        return res.status(403).json({
+          message: 'You need at least 500 followers to create paid prompts',
+          currentFollowers: user.followersCount,
+          required: 500,
+          remaining: 500 - user.followersCount
+        });
+      }
+    }
+
+    // Only admin can create premium content
+    if (isPremium && !isAdmin) {
+      return res.status(403).json({
+        message: 'Only admins can create premium content'
+      });
+    }
 
     // Create prompt
     const newPrompt = await Prompt.create({
@@ -51,6 +75,7 @@ export const createPrompt = async (req, res) => {
       tags: tags || [],
       price: price || 0,
       isPublic: isPublic !== undefined ? isPublic : true,
+      isPremium: isPremium || false,
       author: req.user.id,
       image: image || null,
       aiModel: aiModel || null
@@ -238,3 +263,127 @@ export const deletePrompt = async (req, res) => {
   }
 };
 
+
+// @desc    Increment view count
+// @route   POST /api/prompts/:id/view
+// @access  Public
+export const incrementViewCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const prompt = await Prompt.findByIdAndUpdate(
+      id,
+      { $inc: { viewsCount: 1 } },
+      { new: true }
+    );
+
+    if (!prompt) {
+      return res.status(404).json({ message: 'Prompt not found' });
+    }
+
+    res.json({ viewsCount: prompt.viewsCount });
+  } catch (error) {
+    console.error('Increment view count error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Add or update rating
+// @route   POST /api/prompts/:id/rate
+// @access  Private
+export const ratePrompt = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    const prompt = await Prompt.findById(id);
+    if (!prompt) {
+      return res.status(404).json({ message: 'Prompt not found' });
+    }
+
+    // Check if user already rated this prompt
+    const existingReviewIndex = prompt.reviews.findIndex(
+      review => review.user.toString() === req.user.id
+    );
+
+    if (existingReviewIndex !== -1) {
+      // Update existing review
+      prompt.reviews[existingReviewIndex].rating = rating;
+      prompt.reviews[existingReviewIndex].comment = comment || '';
+    } else {
+      // Add new review
+      prompt.reviews.push({
+        user: req.user.id,
+        rating,
+        comment: comment || ''
+      });
+    }
+
+    // Calculate average rating
+    const totalRating = prompt.reviews.reduce((sum, review) => sum + review.rating, 0);
+    prompt.rating = Math.round((totalRating / prompt.reviews.length) * 10) / 10;
+
+    await prompt.save();
+    await prompt.populate('reviews.user', 'name profileImage');
+
+    res.json({
+      message: 'Rating submitted successfully',
+      rating: prompt.rating,
+      reviews: prompt.reviews
+    });
+  } catch (error) {
+    console.error('Rate prompt error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get prompt ratings
+// @route   GET /api/prompts/:id/ratings
+// @access  Public
+export const getPromptRatings = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const prompt = await Prompt.findById(id)
+      .populate('reviews.user', 'name profileImage');
+
+    if (!prompt) {
+      return res.status(404).json({ message: 'Prompt not found' });
+    }
+
+    res.json({
+      rating: prompt.rating,
+      totalReviews: prompt.reviews.length,
+      reviews: prompt.reviews
+    });
+  } catch (error) {
+    console.error('Get ratings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Check if user can create paid prompts
+// @route   GET /api/prompts/check-eligibility
+// @access  Private
+export const checkEligibility = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const isAdmin = user.role === 'admin';
+    const canEarnMoney = isAdmin || user.followersCount >= 500;
+
+    res.json({
+      canEarnMoney,
+      isAdmin,
+      followersCount: user.followersCount,
+      required: 500,
+      remaining: Math.max(0, 500 - user.followersCount)
+    });
+  } catch (error) {
+    console.error('Check eligibility error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

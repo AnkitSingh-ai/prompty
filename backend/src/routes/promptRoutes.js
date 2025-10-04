@@ -7,7 +7,11 @@ import {
   getPublicPrompts,
   getPromptById,
   updatePrompt,
-  deletePrompt
+  deletePrompt,
+  incrementViewCount,
+  ratePrompt,
+  getPromptRatings,
+  checkEligibility
 } from '../controllers/promptController.js';
 
 const router = express.Router();
@@ -51,17 +55,19 @@ const promptValidation = [
 
 // Public routes
 router.get('/', getPublicPrompts); // Get all public prompts
+router.post('/:id/view', incrementViewCount); // Increment view count (public)
+router.get('/:id/ratings', getPromptRatings); // Get ratings (public)
 
 // Protected routes (require authentication)
-router.use(protect); // Apply authentication middleware to all routes below
-
-router.post('/', promptValidation, createPrompt); // Create a new prompt
-router.get('/my-prompts', getMyPrompts); // Get user's own prompts
+router.post('/create', protect, promptValidation, createPrompt); // Create a new prompt
+router.get('/my-prompts', protect, getMyPrompts); // Get user's own prompts
+router.get('/check-eligibility', protect, checkEligibility); // Check if user can create paid prompts
+router.post('/:id/rate', protect, ratePrompt); // Rate a prompt
 
 // Parameterized routes (must come after specific routes)
 router.get('/:id', getPromptById); // Get a single prompt by ID
-router.put('/:id', promptValidation, updatePrompt); // Update a prompt
-router.delete('/:id', deletePrompt); // Delete a prompt
+router.put('/:id', protect, promptValidation, updatePrompt); // Update a prompt
+router.delete('/:id', protect, deletePrompt); // Delete a prompt
 
 export default router;
 

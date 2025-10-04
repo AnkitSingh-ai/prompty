@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, ListFilter as Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CircleCheck as CheckCircle, UserPlus, UserMinus, Copy, Search, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CheckCircle2, UserPlus, UserMinus, Copy, Search, X } from 'lucide-react';
 import { promptAPI } from '../../services/promptAPI';
 import { purchaseAPI } from '../../services/purchaseAPI';
 import { followAPI } from '../../services/followAPI';
@@ -102,7 +102,7 @@ const Feed = () => {
         return;
       }
       
-      // Check follow status for each author
+      // CheckCircle2 follow status for each author
       const followPromises = authorIds.map(async (authorId) => {
         try {
           const response = await followAPI.checkFollowStatus(authorId);
@@ -883,7 +883,7 @@ const Feed = () => {
                       <>
                         {purchasedPrompts.has(post.id) ? (
                           <button className="flex items-center px-2 py-1 bg-green-500/20 text-green-300 rounded text-xs font-medium border border-green-500/30">
-                            <CheckCircle className="w-3 h-3 mr-1" />
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
                             Purchased
                           </button>
                         ) : (
@@ -911,7 +911,7 @@ const Feed = () => {
                     {post.price === 0 && (
                       <div className="flex items-center space-x-2">
                         <button className="flex items-center px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs font-medium border border-blue-500/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
                           Free
                         </button>
                         <button
