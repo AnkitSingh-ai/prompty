@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CheckCircle2, UserPlus, UserMinus, Copy, Search, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, ListFilter as Filter, TrendingUp, Clock, Star, Trash2, CreditCard, CircleCheck as CheckCircle2, UserPlus, UserMinus, Copy, Search, X } from 'lucide-react';
 import { promptAPI } from '../../services/promptAPI';
 import { purchaseAPI } from '../../services/purchaseAPI';
 import { followAPI } from '../../services/followAPI';

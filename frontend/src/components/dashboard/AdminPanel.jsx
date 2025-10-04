@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, FileText, DollarSign, TrendingUp, AlertTriangle, CheckCircle2, Clock, RefreshCw, Loader } from 'lucide-react';
+import { Shield, Users, FileText, DollarSign, TrendingUp, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, Clock, RefreshCw, Loader } from 'lucide-react';
 import adminAPI from '../../services/adminAPI';
 import { useAuth } from '../../contexts/AuthContext';
 
