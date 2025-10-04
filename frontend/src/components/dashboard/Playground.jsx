@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Zap, Brain, Rocket, Star, Image, Video, Type, Wand2 } from 'lucide-react';
+import { Sparkles, Zap, Brain, Rocket, Star, Image, Video, Type, Wand as Wand2 } from 'lucide-react';
 
 const Playground = () => {
   const features = [
